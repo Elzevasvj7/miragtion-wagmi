@@ -1,15 +1,16 @@
 import { configureChains, createConfig } from "wagmi";
-import { chainSelected } from "./chain";
+import { bsc, bscTestnet } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import { getDefaultWallets } from "@rainbow-me/rainbowkit";
 
-export const { chains, publicClient } = configureChains(chainSelected, [
-  publicProvider(),
-]);
+const { chains, publicClient } = configureChains(
+  [bsc, bscTestnet],
+  [publicProvider()]
+);
 
 const { connectors } = getDefaultWallets({
-  appName: "Wagmi Migration",
-  projectId: "",
+  appName: "My RainbowKit App",
+  projectId: "9fef2ca94f9bf86b19bbea475ae3e550",
   chains,
 });
 

@@ -3,10 +3,68 @@ import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount, usePublicClient, useContractWrite, useFeeData } from 'wagmi';
+import { buyAssetsWithBNB } from '@/utils/mint';
+import abiBuyAssets from "@/abi/BuyAssets.json";
+import { Signer,providers } from 'ethers';
+import { type WalletClient, useWalletClient  } from 'wagmi'
+import * as React from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
+  
+  const {address} = useAccount()
+
+  const { data, isError, isLoading } = useFeeData();
+
+  const fee = data?.formatted.maxPriorityFeePerGas
+  const publicClient = usePublicClient({chainId:97})
+
+   function walletClientToSigner(walletClient: WalletClient) {
+    const { account, chain, transport } = walletClient
+    const network = {
+      chainId: chain.id,
+      name: chain.name,
+      ensAddress: chain.contracts?.ensRegistry?.address,
+    }
+    const provider = new providers.Web3Provider(transport, network)
+    const signer = provider.getSigner(account.address)
+    return signer
+  }
+   
+   function useEthersSigner({ chainId }: { chainId?: number } = {}) {
+    const { data: walletClient } = useWalletClient({ chainId:97 })
+    return React.useMemo(
+      () => (walletClient ? walletClientToSigner(walletClient) : undefined),
+      [walletClient],
+    )
+  }
+
+  const signer = useEthersSigner();
+
+  const mint = async () => {
+    console.log(publicClient);
+    console.log('Wallet Client',signer);
+    try {
+      const result = await buyAssetsWithBNB(
+        publicClient,
+        signer,
+        0.25,
+        fee,
+        1,
+      )
+      if(result.hasError){
+        console.log('TRANSACT FAILED', result.hasError); 
+      }else{
+        console.log('PAY SUCCEFULLY TOKENS ID', result);
+      }
+    } catch (error) {
+
+    }
+    }
+  
+ 
   return (
     <>
       <Head>
@@ -19,6 +77,12 @@ export default function Home() {
         <h1>
           Migration to wagmi 1.x.x
         </h1>
+        {
+          address?
+          <button onClick={mint}>Pay</button>
+          :
+          <h1>You are not connected</h1> 
+        }
         <ConnectButton />
       </main>
     </>
